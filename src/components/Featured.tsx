@@ -13,6 +13,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { useExport } from "@/hooks/use-export";
+import Icon from "@/components/ui/icon";
 
 const circulationData = [
   { year: "2015", total: 450, fiction: 112 },
@@ -51,22 +53,87 @@ const authorData = [
   { year: "2024", domestic: 49, foreign: 51 },
 ];
 
-const COLORS = ["#1a1a2e", "#4a4e69", "#9a8c98", "#c9ada7", "#f2e9e4", "#8a817c"];
+const allDataForCSV = circulationData.map((row) => {
+  const author = authorData.find((a) => a.year === row.year);
+  return {
+    year: row.year,
+    total: row.total,
+    fiction: row.fiction,
+    domestic: author?.domestic ?? "",
+    foreign: author?.foreign ?? "",
+  };
+});
 
 export default function Featured() {
+  const { exportCSV, exportPDF, exportingPdf } = useExport();
+
+  function handleExportCSV() {
+    exportCSV(
+      allDataForCSV,
+      "книжный-рынок-2015-2024.csv",
+      {
+        year: "Год",
+        total: "Общий тираж (млн экз.)",
+        fiction: "Худ. литература (млн экз.)",
+        domestic: "Отечественные авторы (%)",
+        foreign: "Зарубежные авторы (%)",
+      }
+    );
+    exportCSV(
+      genreData,
+      "жанры-2024.csv",
+      { genre: "Жанр", value: "Доля (%)" }
+    );
+    exportCSV(
+      formatData.map(({ name, value }) => ({ name, value })),
+      "форматы-2024.csv",
+      { name: "Формат", value: "Доля (%)" }
+    );
+  }
+
+  function handleExportPDF() {
+    exportPDF("dashboard-content", "аналитика-книжного-рынка-2024.pdf");
+  }
+
   return (
     <div id="dashboard" className="bg-white px-6 py-20">
       <div className="max-w-6xl mx-auto">
-        <p className="uppercase text-xs tracking-[0.3em] text-neutral-500 mb-3">Дашборд · 2015–2024</p>
-        <h2 className="text-3xl md:text-5xl font-bold text-neutral-900 mb-4 leading-tight">
-          Аналитика рынка<br />в реальных данных
-        </h2>
-        <p className="text-neutral-500 max-w-2xl mb-16 text-lg">
-          Комплексный мониторинг ключевых показателей художественной литературы России:
-          тиражи, жанры, форматы и соотношение авторов.
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-16">
+          <div>
+            <p className="uppercase text-xs tracking-[0.3em] text-neutral-500 mb-3">Дашборд · 2015–2024</p>
+            <h2 className="text-3xl md:text-5xl font-bold text-neutral-900 mb-4 leading-tight">
+              Аналитика рынка<br />в реальных данных
+            </h2>
+            <p className="text-neutral-500 max-w-2xl text-lg">
+              Комплексный мониторинг ключевых показателей художественной литературы России:
+              тиражи, жанры, форматы и соотношение авторов.
+            </p>
+          </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+          <div className="flex gap-3 shrink-0">
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center gap-2 border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-800 text-sm px-4 py-2.5 rounded-lg transition-colors duration-200 font-medium"
+            >
+              <Icon name="Table" size={15} />
+              Скачать CSV
+            </button>
+            <button
+              onClick={handleExportPDF}
+              disabled={exportingPdf}
+              className="flex items-center gap-2 bg-neutral-900 hover:bg-neutral-700 disabled:opacity-60 text-white text-sm px-4 py-2.5 rounded-lg transition-colors duration-200 font-medium"
+            >
+              {exportingPdf ? (
+                <Icon name="Loader2" size={15} className="animate-spin" />
+              ) : (
+                <Icon name="FileDown" size={15} />
+              )}
+              {exportingPdf ? "Создаю PDF..." : "Скачать PDF"}
+            </button>
+          </div>
+        </div>
+
+        <div id="dashboard-content" className="grid grid-cols-1 lg:grid-cols-2 gap-10">
           <div className="bg-neutral-50 rounded-2xl p-6 border border-neutral-100">
             <h3 className="font-semibold text-neutral-800 mb-1">Динамика тиражей</h3>
             <p className="text-xs text-neutral-400 uppercase tracking-wide mb-6">Млн экземпляров · Общий vs Худ. литература</p>
